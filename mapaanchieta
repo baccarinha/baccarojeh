@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa UniAnchieta - Campus</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        .dark-mode { background-color: #1a202c; color: white; }
+        .light-mode { background-color: #add8e6; color: black; }
+        .map-container { width: 100%; height: 500px; border-radius: 8px; cursor: zoom-in; }
+        #info-box { width: 80%; max-width: 800px; background: white; padding: 16px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-top: 20px; transition: all 0.3s ease-in-out; }
+        #location-select { padding: 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; background: #1e3a8a; color: white; }
+        #gps-btn { padding: 10px; border-radius: 5px; border: none; background: #28a745; color: white; cursor: pointer; margin-bottom: 10px; }
+    </style>
+</head>
+<body class="light-mode flex flex-col items-center p-6">
+    <div id="qrcode-container">
+        <div id="qrcode"></div>
+    </div>
+    <img src="https://www2.intranet.anchieta.br/sistema_anchieta/EAD/Tickets2/images/Unianchieta-01.png" alt="Logo UniAnchieta" class="logo">
+    
+    <button id="gps-btn">📍 Localizar-me</button>
+    
+    <select id="location-select" class="px-4 py-2 border rounded mb-4 bg-blue-900 text-white">
+        <option value="">Selecione um local</option>
+    </select>
+    
+    <div id="map" class="map-container shadow-lg"></div>
+    
+    <div id="info-box"></div>
+    
+    <div id="details-box"></div>
+    
+    <script>
+        var map = L.map('map').setView([-23.2233, -46.9105], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var locations = [
+            { name: "Prédio 1", coords: [-23.214350, -46.891555], info: "Salas de aula e laboratórios" },
+            { name: "Prédio 2", coords: [-23.212827, -46.893017], info: "Sala de aula e laboratórios" },
+            { name: "Prédio 3", coords: [-23.213885, -46.892887], info: "Bloco acadêmico com laboratórios especializados" },
+            { name: "Prédio 4", coords: [-23.214397, -46.893532], info: "Centro de pesquisa e inovação" },
+            { name: "Anfiteatro", coords: [-23.215271, -46.891171], info: "Espaço para eventos e palestras." }
+        ];
+        
+        function addMarkers() {
+            locations.forEach(loc => {
+                let marker = L.marker(loc.coords).addTo(map)
+                    .bindPopup(`<b>${loc.name}</b><br>${loc.info}`);
+            });
+        }
+        
+        addMarkers();
+        
+        document.getElementById("gps-btn").addEventListener("click", function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    let userCoords = [position.coords.latitude, position.coords.longitude];
+                    let userMarker = L.marker(userCoords).addTo(map).bindPopup("Você está aqui").openPopup();
+                    map.setView(userCoords, 18);
+                }, () => alert("Não foi possível obter sua localização"));
+            } else {
+                alert("Geolocalização não suportada pelo seu navegador");
+            }
+        });
+        
+        document.getElementById("location-select").addEventListener("change", function() {
+            let loc = JSON.parse(this.value);
+            if (loc) {
+                map.setView(loc.coords, 18);
+                L.Routing.control({
+                    waypoints: [
+                        L.latLng(loc.coords[0], loc.coords[1])
+                    ],
+                    routeWhileDragging: true
+                }).addTo(map);
+            }
+        });
+    
+        new QRCode(document.getElementById("qrcode"), {
+            text: window.location.href,
+            width: 100,
+            height: 100
+        });
+    </script>
+</body>
+</html>
